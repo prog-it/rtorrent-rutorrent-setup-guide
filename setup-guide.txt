@@ -34,7 +34,6 @@ cd xmlrpc-c
 ./configure --disable-libwww-client --disable-wininet-client --disable-abyss-server --disable-cgi-server
 make -j2
 checkinstall -D
-dpkg -i xmlrpc_1-1_i386.deb
 ===
 
 4. Установка libtorrent
@@ -112,7 +111,6 @@ chmod -R 755 .
 6.1 Внести изменения в конфиг ruTorrent "conf/config.php"
 ===
 $log_file = '/tmp/rutorrent_errors.log';		// path to log file (comment or leave blank to disable logging)
-$topDirectory = '/home/';			// Upper available directory. Absolute path with trail slash.
 $pathToExternals = array(
 	"php" 	=> '/usr/bin/php',			// Something like /usr/bin/php. If empty, will be found in PATH.
 	"curl"	=> '/usr/bin/curl',			// Something like /usr/bin/curl. If empty, will be found in PATH.
@@ -133,7 +131,7 @@ adduser www-data username
 ===
 
 6.3 [Желательно] В файл "plugins/create/conf.php" внести изменения. Должен быть установлен пакет "transmission-cli". -> apt-get install transmission-cli
-Благодаря этим правкам мы обойдем ограничение на размер файла в 2 ГБ на PHP при создании торрент файла.
+Благодаря этим правкам мы обойдем ограничение на размер файла в 2 ГБ на PHP при создании торрент файла
 ===
 $useExternal = 'transmissioncreate';
 $pathToCreatetorrent = '/usr/bin/transmission-create';
