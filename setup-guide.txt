@@ -1,0 +1,167 @@
+
+####################### Ссылки ###################################################
+
+rTorrent GitHub: https://github.com/rakshasa/rtorrent
+Web-UI ruTorrent GitHub: https://github.com/Novik/ruTorrent
+
+Полезные ссылки по настройке
+===
+https://jes.sc/kb/rTorrent+ruTorrent-Seedbox-Guide.php#ruTorrent
+https://habrahabr.ru/post/238413/
+===
+
+####################### / Ссылки ###################################################
+
+1. Создать пользователя от которого будет работать rTorrent
+===
+adduser --system --group --home /var/lib/rtorrent rtorrent
+cd /var/lib/rtorrent
+mkdir -p ./.session
+mkdir -p ./logs
+chown -R rtorrent:rtorrent .
+===
+
+2. Установить пакеты для компиляции из исходников
+===
+apt-get install -y build-essential subversion autoconf screen g++ gcc ntp curl comerr-dev pkg-config cfv libtool libssl-dev libncurses5-dev ncurses-term libsigc++-2.0-dev libcppunit-dev libcurl3 libcurl4-openssl-dev git checkinstall
+===
+
+3. Установка xmlrpc-c
+===
+cd /usr/src
+svn co -q https://svn.code.sf.net/p/xmlrpc-c/code/stable /usr/src/xmlrpc-c
+cd xmlrpc-c
+./configure --disable-libwww-client --disable-wininet-client --disable-abyss-server --disable-cgi-server
+make -j2
+checkinstall -D
+dpkg -i xmlrpc_1-1_i386.deb
+===
+
+4. Установка libtorrent
+===
+cd /usr/src
+git clone https://github.com/rakshasa/libtorrent.git
+cd libtorrent
+./autogen.sh
+./configure --with-posix-fallocate
+make -j2
+checkinstall -D
+===
+
+5. Установка rTorrent
+===
+cd /usr/src
+git clone https://github.com/rakshasa/rtorrent.git
+cd rtorrent
+./autogen.sh
+./configure --with-xmlrpc-c
+make -j2
+checkinstall -D
+===
+
+5.1 Скопировать пример конфига. Или взять уже настроенный и подправить
+===
+cp /usr/src/rtorrent/doc/rtorrent.rc /var/lib/rtorrent/.rtorrent.rc
+===
+
+5.2 Создать скрипт запуска rTorrent. См. файл "rtorrent"
+===
+nano /etc/init.d/rtorrent
+chmod +x /etc/init.d/rtorrent
+update-rc.d rtorrent defaults 99
+===
+
+5.3 Создать файл аутентификации с помощью htpasswd
+===
+htpasswd -c /etc/nginx/auth/auth.file username
+===
+
+5.4 Настроить nginx. Добавить в конфиг хоста. Пример конфига для хоста с root директорией в "/var/www".
+Чтобы в браузере открыть ruTorrent, необходимо перейти по адресу: http://example.com/rutorrent
+===
+location /rutorrent {
+	auth_basic "Private zone";
+	auth_basic_user_file /etc/nginx/auth/auth.file;
+	
+	location /rutorrent/RPC2 {
+		scgi_pass 127.0.0.1:5000;
+		include /etc/nginx/scgi_params;	
+	}
+}
+===
+
+5.5 Дать необходимые права пользователям. Nginx у нас работает от пользователя "www-data"
+===
+adduser rtorrent www-data
+adduser www-data rtorrent
+===
+
+5.6 Перезагрузить nginx
+===
+service nginx restart
+===
+
+6. Настроить Web-UI ruTorrent
+===
+cd /var/www/rutorrent
+git clone https://github.com/Novik/ruTorrent.git .
+chown -R www-data:www-data .
+chmod -R 755 .
+===
+
+6.1 Внести изменения в конфиг ruTorrent "conf/config.php"
+===
+$log_file = '/tmp/rutorrent_errors.log';		// path to log file (comment or leave blank to disable logging)
+$topDirectory = '/home/';			// Upper available directory. Absolute path with trail slash.
+$pathToExternals = array(
+	"php" 	=> '/usr/bin/php',			// Something like /usr/bin/php. If empty, will be found in PATH.
+	"curl"	=> '/usr/bin/curl',			// Something like /usr/bin/curl. If empty, will be found in PATH.
+	"gzip"	=> '/bin/gzip',			// Something like /usr/bin/gzip. If empty, will be found in PATH.
+	"id"	=> '/usr/bin/id',			// Something like /usr/bin/id. If empty, will be found in PATH.
+	"stat"	=> '/usr/bin/stat',			// Something like /usr/bin/stat. If empty, will be found in PATH.
+);
+===
+
+6.2 В конфиг файле rTorrent ".rtorrent.rc" у нас настроен автозапуск плагинов ruTorrent при старте сервиса rtorrent.
+Плагины будут запускаться для пользователя "username", соответственно с ruTorrent будет работать пользователь "username". Такой пользователь должен существовать в системе и ему должны быть даны необходимые права
+===
+useradd username
+groupadd username
+adduser username username
+adduser rtorrent username
+adduser www-data username
+===
+
+6.3 [Желательно] В файл "plugins/create/conf.php" внести изменения. Должен быть установлен пакет "transmission-cli". -> apt-get install transmission-cli
+Благодаря этим правкам мы обойдем ограничение на размер файла в 2 ГБ на PHP при создании торрент файла.
+===
+$useExternal = 'transmissioncreate';
+$pathToCreatetorrent = '/usr/bin/transmission-create';
+$recentTrackersMaxCount = 15;
+===
+
+6.4 [Необязательно] В файл "plugins/geoip/conf.php" внести изменения
+===
+$dnsResolver = null;
+===
+
+6.5 [Необязательно] В файл "plugins/rutracker_check/conf.php" внести изменения
+===
+$updateInterval = 180;
+===
+
+6.6 [Необязательно] В файл "plugins/autotools/conf.php" внести изменения
+===
+$autowatch_interval = 10;
+===
+
+6.7 [Необязательно] В файле "php/Torrent.php" найти строчку, содержащую "$this->{'created by'}". И внести изменения.
+Этим мы изменим имя торрент клиента, которое будет добавлено в торрент файл, при его создании
+===
+$this->{'created by'} = 'myTorrentClient';
+===
+
+7. Запуск rTorrent
+===
+service rtorrent start
+===

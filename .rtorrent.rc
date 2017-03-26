@@ -1,0 +1,360 @@
+### Examples Settings
+# 
+# https://gist.github.com/ItsAdventureTime/417bf16c4de8dd4d2bab
+# https://github.com/rakshasa/rtorrent/wiki/Performance-Tuning
+# https://habrahabr.ru/post/238413/
+#
+##
+#
+# externalip.example.com - Host that points to your external IP address
+#
+###
+
+### Downloads Settings 
+#
+# Maximum number of simultaneous downloads and uploads slots (global slots!) (`max_downloads_global`, `max_uploads_global`)
+#
+##throttle.max_downloads.global.set = 600
+##throttle.max_uploads.global.set   = 600
+
+# Maximum number of simultanious uploads per torrent.
+#
+throttle.max_uploads.set = 50
+
+# Maximum number of simultanious downloads per torrent.
+#
+throttle.max_downloads.set = 50
+
+# Maximum and minimum number of peers to connect to per torrent.
+#
+throttle.min_peers.normal.set = 1
+throttle.max_peers.normal.set = 100
+
+# Same as above but for seeding completed torrents (-1 = same as downloading)
+#
+throttle.min_peers.seed.set = 1
+throttle.max_peers.seed.set = 100
+
+# Set the numwant field sent to the tracker, which indicates how many peers we want. 
+# A negative value disables this feature. Default: `-1` (`tracker_numwant`)
+trackers.numwant.set = -1
+
+# Check hash for finished torrents. Might be usefull until the bug is
+# fixed that causes lack of diskspace not to be properly reported.
+#
+pieces.hash.on_completion.set = yes
+
+# Default directory to save the downloaded torrents.
+directory.default.set = /home/torrents/download
+
+# Default session directory. Make sure you don't run multiple instance
+# of rtorrent using the same session directory. Perhaps using a
+# relative path?
+session.path.set = /var/lib/rtorrent/.session
+
+
+### Connection Settings 
+#
+# Port range to use for listening.
+#
+network.port_range.set = 59500-59500
+
+# Start opening ports at a random position within the port range.
+#
+network.port_random.set = no
+
+# Global upload and download rate in KiB. "0" for unlimited.
+#
+#throttle.global_up.max_rate.set_kb = 733
+throttle.global_down.max_rate.set_kb = 12500
+throttle.global_up.max_rate.set_kb = 2000
+
+# Set the max amount of memory address space used to mapping file chunks. This refers to memory mapping, not
+#  physical memory allocation. Default: `1GB` (`max_memory_usage`) 
+# This may also be set using ulimit -m where 3/4 will be allocated to file chunks.
+# nb does not refer to physical memory
+#
+pieces.memory.max.set = 2048M
+
+# Maximum number of open files rtorrent can keep open (you have to modify the system wide settings with ulimit!) (`set_max_open_files`)
+# max number of files to keep open simultaneously
+#
+network.max_open_files.set = 1024
+
+# Maximum number of simultaneous HTTP request (used by announce or scrape requests) Default: `32` (`set_max_open_http`)
+# network.http.max_open.set = 32
+#
+network.http.max_open.set = 256
+
+
+### BitTorrent Settings 
+# 
+# Enable DHT support for trackerless torrents or when all trackers are down.
+# May be set to "disable" (completely disable DHT), "off" (do not start DHT),
+# "auto" (start and stop DHT as needed), or "on" (start DHT immediately).
+# The default is "off". For DHT to work, a session directory must be defined.
+# 
+dht.mode.set = on
+
+# UDP port to use for DHT. 
+#
+dht.port.set = 59500
+
+# Adding new dht servers
+#
+schedule2 = dht_node,20,0,"dht.add_node=router.utorrent.com:6881"
+schedule2 = dht_node,25,0,"dht.add_node=dht.transmissionbt.com:6881"
+schedule2 = dht_node,30,0,"dht.add_node=dht.libtorrent.org:25401"
+schedule2 = dht_node,35,0,"dht.add_node=router.bittorrent.com:6881"
+
+# Enable peer exchange (for torrents not marked private)
+#
+protocol.pex.set = yes
+
+# The ip address reported to the tracker.
+#
+#network.local_address.set = 127.0.0.1
+##network.local_address.set = externalip.example.com
+
+# schedule syntax: id,start,interval,command 
+# call cmd every interval seconds, starting from start. an interval of zero calls the task once 
+# while a start of zero calls it immediately. start and interval may optionally use a time format 
+# dd:hh:mm:ss e.g. to start a task every day at 18:00, use 18:00:00,24:00:00. 
+# commands: stop_untied =, close_untied =, remove_untied = 
+# stop, close or remove the torrents that are tied to filenames that have been deleted 
+
+# Watch a directory for new torrents, and stop those that have been
+# deleted.
+#
+# For details, see link above on habrahabr.ru
+#
+##schedule2 = watch_directory,5,5,load.start=/home/torrents/.watch/*.torrent
+##schedule2 = untied_directory,5,5,stop_untied=
+schedule2 = watch_directory_1, 5, 5, ((load.start,  /home/torrents/.watch/*.torrent,   "d.custom.set = watchdir, /home/torrents/.watch",   "d.directory.set = /home/torrents/download"))
+
+method.insert = d.renamed_suffix,   simple, "if = $d.complete=, +++, ---"
+# - WORKAROUND: extra / at beginning needed because $d.tied_to_file= begins with //
+method.insert = d.renamed_file,     simple, "cat = /, $d.custom=watchdir, /, $d.renamed_suffix=, ., $d.name=, .torrent"
+method.insert = d.rename_file,      simple, "execute = mv, --, $d.tied_to_file=, $d.renamed_file=; d.tied_to_file.set = $d.renamed_file="
+method.insert = d.safe_rename_file, simple, "branch = ((equal, d.tied_to_file=, d.renamed_file=)), , d.rename_file="
+method.set_key = event.download.inserted_new,   rename_loaded,  d.safe_rename_file=
+method.set_key = event.download.resumed,        rename_resumed, d.safe_rename_file=
+method.set_key = event.download.finished,       rename_finished,d.safe_rename_file=
+
+schedule2 = watch_untied,5,5,((stop_untied))
+
+# Auto start RUtorrent webui plugins
+#
+schedule2 = start_rutorrent,5,0,"execute = /bin/sh,-c,\"/usr/bin/php /var/www/rutorrent/php/initplugins.php username &\""
+
+# Close torrents when diskspace is low. */
+#
+schedule2 = low_diskspace,5,60,close_low_diskspace=10240M
+
+# stop torrents when reaching upload ratio in percent,
+# when also reaching total upload in bytes, or when
+# reaching final upload ratio in percent
+# example: stop at ratio 2.0 with at least 200 MB uploaded, or else ratio 20.0
+#
+# schedule = ratio,60,60,stop_on_ratio=200,200M,2000 
+ 
+# load = file, load_verbose = file, load_start = file, load_start_verbose = file 
+# load and possibly start a file, or possibly multiple files by using the wild-card "*" 
+# this is meant for use with schedule, though ensure that the start is non-zero 
+# the loaded file will be tied to the filename provided. 
+ 
+# when the torrent finishes, it executes "mv -n <base_path> /home/$NEWUSER1/Download/" 
+# and then sets the destination directory to "/home/$NEWUSER1/Download/". (0.7.7+)
+#
+# on_finished = move_complete,"execute=mv,-u,$d.get_base_path=,/home/(your username)/(your download folder)/complete/ ;d.set_directory=/home/(your username)/(your download folder)/complete/"
+
+# SCGI open port
+#
+#scgi_port = 127.0.0.1:5000
+network.scgi.open_port = 127.0.0.1:5000
+
+# SCGI charset FORCE
+#
+encoding_list = UTF-8
+
+# Alternative calls to bind and ip that should handle dynamic ip's.
+#
+schedule2 = ip_tick,0,180,ip=externalip.example.com
+#schedule2 = bind_tick,0,1800,bind=externalip.example.com
+
+# Encryption options, set to none (default) or any combination of the following:
+# allow_incoming, try_outgoing, require, require_RC4, enable_retry, prefer_plaintext
+#
+# The example value allows incoming encrypted connections, starts unencrypted
+# outgoing connections but retries with encryption if they fail, preferring
+# plaintext to RC4 encryption after the encrypted handshake
+#
+protocol.encryption.set = allow_incoming,try_outgoing,enable_retry,prefer_plaintext
+
+
+### Advanced Settings 
+# 
+# do not modify the following parameters unless you know what you"re doing 
+#
+
+# example of scheduling commands: Switch between two ip"s every 5 seconds 
+#
+# schedule = "ip_tick1,5,10,ip=torretta" 
+# schedule = "ip_tick2,10,10,ip=lampedusa" 
+
+# remove a scheduled event 
+# schedule_remove = "ip_tick1"
+
+# hash read-ahead controls how many MB to request the kernel to read ahead ahead 
+# if the value is too low the disk may not be fully utilized, 
+# while if too high the kernel might not be able to keep the read pages 
+# in memory thus end up trashing. 
+#
+# system.hash.read_ahead.set = 8 
+
+# interval between attempts to check the hash, in milliseconds
+#
+# system.hash.interval.set = 50
+
+# number of attempts to check the hash while using the mincore status, before forcing 
+# overworked systems might need lower values to get a decent hash checking rate
+#
+# system.hash.max_tries.set = 3 
+
+# SSL certificate name
+#
+# http_cacert =
+# SSL certificate path 
+#
+# http_capath =
+
+# throttle.max_downloads.div.set = 
+# max_downloads_div =
+
+# throttle.max_uploads.div.set = 
+# max_uploads_div =
+
+#
+#
+system.file.max_size.set = -1
+
+# Preloading a piece of a file. Default: `0` Possible values: `0` (Off) , `1` (Madvise) , `2` (Direct paging).
+# preload type 0 = Off, 1 = madvise, 2 = direct paging
+#
+pieces.preload.type.set = 1
+pieces.preload.min_size.set = 262144
+pieces.preload.min_rate.set = 5120
+
+# Send and receive buffer size for socket. Disabled by default (`0`), this means the default is used by OS 
+#  (you have to modify the system wide settings!) (`send_buffer_size`, `receive_buffer_size`)
+# Increasing buffer sizes may help reduce disk seeking, connection polling as more data is buffered each time
+#  the socket is written to. It will result higher memory usage (not visible in rtorrent process!)
+#
+#network.send_buffer.size.set = 4M
+#network.receive_buffer.size.set = 12M
+network.send_buffer.size.set = 1M
+network.receive_buffer.size.set = 131072
+
+pieces.sync.always_safe.set = no
+pieces.sync.timeout.set = 600
+pieces.sync.timeout_safe.set = 900
+
+# scgi_dont_route =
+# network.scgi.dont_route.set =
+
+# session.path.set =
+session.name.set =
+session.use_lock.set = yes
+session.on_completion.set = yes
+
+system.file.split_size.set = -1
+system.file.split_suffix.set = .part
+
+# Set whether the client should try to connect to UDP trackers.
+#
+trackers.use_udp.set = yes
+
+# use a http proxy. [url] ;an empty string disables this setting
+# To connect torrent Trackers
+#
+#network.http.proxy_address.set = 127.0.0.1:9050
+
+# Proxy for all traffic. Include torrent traffic peers
+#
+#network.proxy_address.set = 127.0.0.1:9050
+
+# The ip address the listening socket and outgoing connections is
+# bound to.
+#
+#network.bind_address.set = externalip.example.com
+#network.bind_address.set = 0.0.0.0
+
+# Maximum number of connections rtorrent can accept/make (`sockets`)
+# number of sockets to simultaneously keep open
+#
+#network.max_open_sockets.set = 65023
+
+# Set the umask applied to all files created by rtorrent
+#
+# system.umask.set =
+
+# alternate keyboard mappings
+# qwerty | azerty | qwertz | dvorak
+#
+# key_layout = dvorak
+# keys.layout.set = dvorak
+
+# Set download list layout style. ("full", "compact")
+#
+#ui.torrent_list.layout.set = "full"
+
+# TOS of peer connections. Default: `throughput`. If the option is set to `default` then the system default TOS
+#  is used. A hex value may be used for non-standard settings.  (`tos`)
+# Possible values: `[default|lowdelay|throughput|reliability|mincost]` or a hex value.
+#
+#network.tos.set = throughput
+
+# CURL options to add support for nonofficial SSL trackers and peers
+#
+network.http.ssl_verify_host.set = 0
+network.http.ssl_verify_peer.set = 0
+
+# CURL option to lower DNS timeout. Default: `60`.
+#
+network.http.dns_cache_timeout.set = 60
+
+# Max packet size using xmlrpc. Default: `524288` (xmlrpc_size_limit)
+#
+##network.xmlrpc.size_limit.set = 2M
+network.xmlrpc.size_limit.set = 2M
+
+# Save all the sessions in every 12 hours instead of the default 20 minutes.
+#
+#schedule2 = session_save, 1200, 43200, ((session.save))
+schedule2 = session_save, 240, 300, ((session.save))
+
+# Prune file status in every 24 hours, this is the default setting.
+#
+#schedule2 = prune_file_status, 3600, 86400, ((system.file_status_cache.prune))
+
+# Whether to allocate disk space for a new torrent. Default: `0`
+#
+system.file.allocate.set = 1
+
+################ If you need log, uncomment (remove ######) from all lines below
+
+log.open_file = "rtorrent", /var/lib/rtorrent/logs/rtorrent.log
+log.open_file = "tracker", /var/lib/rtorrent/logs/tracker.log
+#log.open_file = "storage", /var/lib/rtorrent/logs/storage.log
+
+log.add_output = "info", "rtorrent"
+log.add_output = "critical", "rtorrent"
+log.add_output = "error", "rtorrent"
+log.add_output = "warn", "rtorrent"
+log.add_output = "notice", "rtorrent"
+log.add_output = "debug", "rtorrent"
+
+log.add_output = "dht_debug", "tracker"
+log.add_output = "tracker_debug", "tracker"
+
+#log.add_output = "storage_debug", "storage"
