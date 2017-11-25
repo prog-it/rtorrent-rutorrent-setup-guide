@@ -27,12 +27,12 @@ throttle.max_downloads.set = 50
 
 # Maximum and minimum number of peers to connect to per torrent.
 #
-throttle.min_peers.normal.set = 1
+throttle.min_peers.normal.set = 10
 throttle.max_peers.normal.set = 100
 
 # Same as above but for seeding completed torrents (-1 = same as downloading)
 #
-throttle.min_peers.seed.set = 1
+throttle.min_peers.seed.set = 10
 throttle.max_peers.seed.set = 100
 
 # Set the numwant field sent to the tracker, which indicates how many peers we want. 
@@ -102,10 +102,10 @@ dht.port.set = 59500
 
 # Adding new dht servers
 #
-schedule2 = dht_node,20,0,"dht.add_node=router.utorrent.com:6881"
-schedule2 = dht_node,25,0,"dht.add_node=dht.transmissionbt.com:6881"
-schedule2 = dht_node,30,0,"dht.add_node=dht.libtorrent.org:25401"
-schedule2 = dht_node,35,0,"dht.add_node=router.bittorrent.com:6881"
+schedule2 = dht_node,15,0,"dht.add_node=router.bittorrent.com:6881"
+#schedule2 = dht_node,20,0,"dht.add_node=router.utorrent.com:6881"
+#schedule2 = dht_node,25,0,"dht.add_node=dht.transmissionbt.com:6881"
+#schedule2 = dht_node,30,0,"dht.add_node=dht.libtorrent.org:25401"
 
 # Enable peer exchange (for torrents not marked private)
 #
