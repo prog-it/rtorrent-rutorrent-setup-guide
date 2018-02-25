@@ -100,6 +100,33 @@ adduser www-data rtorrent
 service nginx restart
 ===
 
+5.7 Также можно подредактировать настройки системы для более быстрой и стабильной работы rtorrent. Для этого нужно добавить в файл "/etc/sysctl.conf"
+===
+#### Rtorrent
+# Maximum Socket Receive Buffer. 16MB per socket - which sounds like a lot, but will virtually never consume that much. Default: 212992
+net.core.rmem_max = 16777216
+# Maximum Socket Send Buffer. 16MB per socket - which sounds like a lot, but will virtually never consume that much. Default: 212992
+net.core.wmem_max = 16777216
+# Increase the write-buffer-space allocatable: min 4KB, def 12MB, max 16MB. Default: 4096 16384 4194304
+net.ipv4.tcp_wmem = 4096 12582912 16777216
+# Increase the read-buffer-space allocatable: min 4KB, def 12MB, max 16MB. Default: 4096 16384 4194304
+net.ipv4.tcp_rmem = 4096 12582912 16777216
+
+# Tells the system whether it should start at the default window size only for new TCP connections or also for existing TCP connections that have been idle for too long. Default: 1
+net.ipv4.tcp_slow_start_after_idle = 0
+# Allow reuse of sockets in TIME_WAIT state for new connections only when it is safe from the network stackвЂ™s perspective. Default: 0
+net.ipv4.tcp_tw_reuse = 1
+# Do not last the complete time_wait cycle. Default: 0
+net.ipv4.tcp_tw_recycle = 1
+# Minimum time a socket will stay in TIME_WAIT state (unusable after being used once). Default: 60
+net.ipv4.tcp_fin_timeout = 30
+===
+
+5.8 Применить внесенные изменения в файл "/etc/sysctl.conf" без перезагрузки системы
+===
+sysctl -p /etc/sysctl.conf
+===
+
 6. Настроить Web-UI ruTorrent
 ===
 cd /var/www/rutorrent
