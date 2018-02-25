@@ -14,8 +14,8 @@
 #
 # Maximum number of simultaneous downloads and uploads slots (global slots!) (`max_downloads_global`, `max_uploads_global`)
 #
-##throttle.max_downloads.global.set = 600
-##throttle.max_uploads.global.set   = 600
+throttle.max_downloads.global.set = 300
+throttle.max_uploads.global.set   = 300
 
 # Maximum number of simultanious uploads per torrent.
 #
@@ -42,7 +42,7 @@ trackers.numwant.set = -1
 # Check hash for finished torrents. Might be usefull until the bug is
 # fixed that causes lack of diskspace not to be properly reported.
 #
-pieces.hash.on_completion.set = yes
+pieces.hash.on_completion.set = no
 
 # Default directory to save the downloaded torrents.
 directory.default.set = /home/torrents/download
@@ -65,7 +65,6 @@ network.port_random.set = no
 
 # Global upload and download rate in KiB. "0" for unlimited.
 #
-#throttle.global_up.max_rate.set_kb = 733
 throttle.global_down.max_rate.set_kb = 12500
 throttle.global_up.max_rate.set_kb = 2000
 
@@ -79,7 +78,7 @@ pieces.memory.max.set = 2048M
 # Maximum number of open files rtorrent can keep open (you have to modify the system wide settings with ulimit!) (`set_max_open_files`)
 # max number of files to keep open simultaneously
 #
-network.max_open_files.set = 1024
+network.max_open_files.set = 600
 
 # Maximum number of simultaneous HTTP request (used by announce or scrape requests) Default: `32` (`set_max_open_http`)
 # network.http.max_open.set = 32
@@ -149,7 +148,7 @@ schedule2 = start_rutorrent,5,0,"execute = /bin/sh,-c,\"/usr/bin/php /var/www/ru
 
 # Close torrents when diskspace is low. */
 #
-schedule2 = low_diskspace,5,60,close_low_diskspace=10240M
+#schedule2 = low_diskspace,5,60,close_low_diskspace=10240M
 
 # stop torrents when reaching upload ratio in percent,
 # when also reaching total upload in bytes, or when
@@ -241,23 +240,23 @@ system.file.max_size.set = -1
 # Preloading a piece of a file. Default: `0` Possible values: `0` (Off) , `1` (Madvise) , `2` (Direct paging).
 # preload type 0 = Off, 1 = madvise, 2 = direct paging
 #
-pieces.preload.type.set = 1
-pieces.preload.min_size.set = 262144
-pieces.preload.min_rate.set = 5120
+pieces.preload.type.set = 2
+#pieces.preload.min_size.set = 262144
+#pieces.preload.min_rate.set = 5120
 
 # Send and receive buffer size for socket. Disabled by default (`0`), this means the default is used by OS 
 #  (you have to modify the system wide settings!) (`send_buffer_size`, `receive_buffer_size`)
 # Increasing buffer sizes may help reduce disk seeking, connection polling as more data is buffered each time
 #  the socket is written to. It will result higher memory usage (not visible in rtorrent process!)
 #
-#network.send_buffer.size.set = 4M
-#network.receive_buffer.size.set = 12M
-network.send_buffer.size.set = 1M
-network.receive_buffer.size.set = 131072
+network.send_buffer.size.set = 4M
+network.receive_buffer.size.set = 12M
+#network.send_buffer.size.set = 1M
+#network.receive_buffer.size.set = 131072
 
-pieces.sync.always_safe.set = no
-pieces.sync.timeout.set = 600
-pieces.sync.timeout_safe.set = 900
+#pieces.sync.always_safe.set = no
+#pieces.sync.timeout.set = 600
+#pieces.sync.timeout_safe.set = 900
 
 # scgi_dont_route =
 # network.scgi.dont_route.set =
@@ -292,7 +291,7 @@ trackers.use_udp.set = yes
 # Maximum number of connections rtorrent can accept/make (`sockets`)
 # number of sockets to simultaneously keep open
 #
-#network.max_open_sockets.set = 65023
+network.max_open_sockets.set = 999
 
 # Set the umask applied to all files created by rtorrent
 #
@@ -321,7 +320,7 @@ network.http.ssl_verify_peer.set = 0
 
 # CURL option to lower DNS timeout. Default: `60`.
 #
-network.http.dns_cache_timeout.set = 60
+network.http.dns_cache_timeout.set = 25
 
 # Max packet size using xmlrpc. Default: `524288` (xmlrpc_size_limit)
 #
